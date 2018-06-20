@@ -5,6 +5,7 @@ Repository for docker image configuration for koferta CI
 Based on Ubuntu latest (Bionic at the moment)
 
 ### PPAs added
+ * beineri/opt-qt-5.11.0-bionic
 
 ### Packages installed from apt
  * build essentials
