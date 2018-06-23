@@ -1,31 +1,68 @@
 FROM ubuntu:latest
-RUN apt-get -y update \
-    && apt-get install -y --no-install-recommends \
-		build-essential \
-		pkg-config \
-		sudo \
-        ninja-build \
-        git \
-        wget \
-        software-properties-common \ 
-	&& rm -rf /var/lib/apt/lists/* 
-# apt-file
+
+ENV DEBIAN_FRONTEND noninteractive
+ENV INITRD No
+
+#setup locale
+RUN apt-get -y -qq update \
+    && apt-get install -q -y --no-install-recommends locales \
+	&& rm -rf /var/lib/apt/lists/* \
+    && locale-gen en_US.UTF-8
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US.UTF-8
+ENV LC_ALL en_US.UTF-8
+ENV LC_LANG en_US.UTF-8
+
+#install basics
+RUN apt-get -y -qq update \
+    && apt-get install -q -y --no-install-recommends \
+build-essential sudo gosu ninja-build git wget ssh software-properties-common \
+	&& rm -rf /var/lib/apt/lists/* \
+    && locale-gen en_US.UTF-8
+
+#install cmake 3.11 from official site
+RUN wget https://cmake.org/files/v3.11/cmake-3.11.4-Linux-x86_64.sh --no-check-certificate -q --server-response \
+    && sh cmake-3.11.4-Linux-x86_64.sh --prefix=/usr/local --exclude-subdir 
+
+#install qr 5.11 from apt
 RUN add-apt-repository ppa:beineri/opt-qt-5.11.0-bionic -y \
-    && apt-get -y update \
-    && apt-get install -y --no-install-recommends \
+    && apt-get -y -qq update \
+    && apt-get install -q -y --no-install-recommends \
         mesa-common-dev \
         qt511base \
        	qt511tools \
 	&& rm -rf /var/lib/apt/lists/* 
-RUN ls /usr/include/GL
-RUN wget https://cmake.org/files/v3.11/cmake-3.11.4-Linux-x86_64.sh --no-check-certificate \
-    && sh cmake-3.11.4-Linux-x86_64.sh --prefix=/usr/local --exclude-subdir 
+ENV QTDIR "/opt/qt511"
+ENV PATH "$QTDIR/bin:$PATH"
+ENV CMAKE_PREFIX_PATH "/opt/qt511/lib/cmake/"
+
+#install mariadb
+RUN apt-get -y -qq update \
+    && apt-get install -q -y --no-install-recommends mariadb-server \
+	&& rm -rf /var/lib/apt/lists/* 
+#    && sed -i 's/^\(bind-address\s.*\)/# \1/' /etc/mysql/my.cnf \
+#    && update-rc.d -f mysql disable
+
+#add normal user
 RUN echo 'user ALL=(ALL) NOPASSWD: ALL' >/etc/sudoers.d/user \
     && useradd -m -d /home/user user
-USER user 
-WORKDIR /home/user
+#USER user 
+ENV USER user
 ENV HOME=/home/user 
-ENV QTDIR="/opt/qt511"
-ENV PATH="$QTDIR/bin:$PATH"
-ENV CMAKE_PREFIX_PATH="/opt/qt511/lib/cmake/"
+WORKDIR /home/user
+
+#run 
+ENV DATABASE koferta_test
+ADD run_db /usr/local/bin/run_db
+RUN chmod +x /usr/local/bin/run_db && mkdir /var/run/mysqld && chown mysql:mysql /var/run/mysqld
+#VOLUME ["/var/lib/mysql"]
+#EXPOSE 3306
+ENTRYPOINT ["/usr/local/bin/run_db"]
+#CMD ["/usr/local/bin/run_db"]
 CMD ["/bin/bash"]
+
+#for debugging
+#RUN apt-get -y -qq update \
+#    && apt-get install -q -y --no-install-recommends vim 
+# apt-file vim pkg-config
+

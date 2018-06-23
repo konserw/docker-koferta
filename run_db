@@ -1,0 +1,47 @@
+#!/bin/bash
+echo "Database setup script start"
+ 
+MARIADB_USER=${USER:-""}
+MARIADB_DATABASE=${DATABASE:-""}
+
+config=`mktemp`
+if [[ ! -f "$config" ]]; then
+    return 1
+fi
+
+if [ ! -f /var/lib/mysql/ibdata1 ]; then
+  mysql_install_db
+fi
+
+cat << EOF > $config
+USE mysql;
+FLUSH PRIVILEGES;
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' WITH GRANT OPTION;
+EOF
+#UPDATE user SET plugin='mysql_native_password' WHERE User='root';
+#UPDATE user SET password=PASSWORD("$MARIADB_ROOT_PASSWORD") WHERE user='root';
+
+if [[ $MARIADB_DATABASE != "" ]]; then
+  echo "Creating $MARIADB_DATABASE database"
+  echo "CREATE DATABASE IF NOT EXISTS \`$MARIADB_DATABASE\` CHARACTER SET utf8 COLLATE utf8_general_ci;" >> $config
+  if [[ $MARIADB_USER != "" ]]; then
+    echo "CREATE USER '$MARIADB_USER'@'%' IDENTIFIED WITH unix_socket;">> $config
+    echo "GRANT ALL ON \`$MARIADB_DATABASE\`.* to '$MARIADB_USER'@'%';" >> $config
+    echo "Show databases;" >> $config
+    echo "Select * from user;" >> $config
+#    echo "FLUSH PRIVILEGES;" >> $config
+  fi
+fi
+
+/usr/sbin/mysqld --bootstrap --verbose=10 < $config
+rm -f $config
+
+#exec sudo -u mysql /usr/sbin/mysqld
+#gosu mysql /usr/sbin/mysqld 
+#starting db service
+service mysql start
+echo "Script finished"
+
+# needed to run parameters CMD
+echo "executing provided command: $@"
+gosu user $@
