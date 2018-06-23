@@ -16,9 +16,11 @@ ENV LC_LANG en_US.UTF-8
 #install basics
 RUN apt-get -y -qq update \
     && apt-get install -q -y --no-install-recommends \
-build-essential sudo gosu ninja-build git wget ssh software-properties-common \
-	&& rm -rf /var/lib/apt/lists/* \
-    && locale-gen en_US.UTF-8
+build-essential sudo gosu ninja-build wget software-properties-common \
+	&& rm -rf /var/lib/apt/lists/* 
+# git ssh
+#    && echo "StrictHostKeyChecking no 
+#UserKnownHostsFile /dev/null" > /etc/ssh/ssh_config
 
 #install cmake 3.11 from official site
 RUN wget https://cmake.org/files/v3.11/cmake-3.11.4-Linux-x86_64.sh --no-check-certificate -q --server-response \
