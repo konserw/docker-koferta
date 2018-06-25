@@ -16,7 +16,7 @@ ENV LC_LANG en_US.UTF-8
 #install basics
 RUN apt-get -y -qq update \
     && apt-get install -q -y --no-install-recommends \
-vim build-essential sudo gosu ninja-build wget software-properties-common \
+xvfb vim build-essential sudo gosu ninja-build wget software-properties-common \
 	&& rm -rf /var/lib/apt/lists/* 
 # git ssh
 #    && echo "StrictHostKeyChecking no 
